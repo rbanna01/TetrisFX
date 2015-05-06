@@ -21,29 +21,45 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.canvas.Canvas;
 import javafx.stage.Stage;
 
-//placeholder
+
 /**
  * Tests:  
  * to do: gear shifts after ten minutes? Making drawing purtier
  * @author Ruaridhi Bannatyne (to8451@tom.com)
  */
 public class TetrisFX extends Application {
-    //needed: stop and go buttons, String for score, tetrisGame object
-    //gameOn state var
+    /*
+    Whether a game is in progress.
+    */
     private boolean playing;
+    /*
+    Whether it's paused.
+    */
     private boolean paused;
+    
+    /*
+    Quit and start buttons.
+    */
     private Button qB;
     private Button sB;
+    /*
+    Text for them.
+    */
     private String stopText = "Quit";
     private String goText = "Start game";
     private String playingGo = "Pause";
     private String playingStop = "End game";
     private String pauseGo = "Resume";
+    /*
+    GameCanvas holds game model and view.
+    */
     private GameCanvas gC;
-    //private Tetris game;
-    //dimensions: 100 x 200?
-    private int HEIGHT = 500;
-    private int WIDTH = 175;
+    /*
+    Dimensions of the window.
+    */
+    private int HEIGHT = 530;
+    private int WIDTH = 200;
+    
     @Override
     public void start(Stage primaryStage) {
         playing = false;
@@ -55,7 +71,8 @@ public class TetrisFX extends Application {
         qB.setText(stopText);
         FlowPane root = new FlowPane(javafx.geometry.Orientation.VERTICAL);
         root.setVgap(5.0);
-        gC = new GameCanvas(WIDTH, HEIGHT-100);
+        gC = new GameCanvas(WIDTH, HEIGHT-70);
+        //root.setPrefWidth()
         Canvas c =  gC.getCanvas();
         root.getChildren().addAll(c, sB, qB);
         Scene scene = new Scene(root, WIDTH, HEIGHT);
@@ -64,14 +81,16 @@ public class TetrisFX extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
     }
-
+    
+    /*
+    Handles all events passed to the qB and sB Buttons.
+    */
     private EventHandler<ActionEvent> mH = new EventHandler<ActionEvent>() {
         
       @Override
       public void handle(ActionEvent aE) { //need  modification to stop when playing
            Object source = aE.getSource(); //and vice versa
            if(source == sB) {
-               System.out.println("go");
                if(playing) {
                    doPause();
                }
@@ -83,16 +102,13 @@ public class TetrisFX extends Application {
                }
            }
            else if (source == qB) {
-               //Guess this should really be a halt button, with a prompt
-               System.out.println("stop");
-               if (playing) {
+                   if (playing) {
                    if (!paused) gC.doPause();
                    Alert alert = new Alert(AlertType.CONFIRMATION);
                    alert.setTitle("End game?");
                    alert.setContentText("Click ok to confirm , or no to cancel");
                    Optional<ButtonType> result = alert.showAndWait();
-                   if(result.get() == ButtonType.OK) {
-                   //Platform.exit();
+                   if (result.get() == ButtonType.OK) {
                    gC.endGame();
                    playing = false;
                    paused = false;
@@ -103,7 +119,7 @@ public class TetrisFX extends Application {
                        gC.doPause();
                    }
                 }
-               else { //prompt here?
+               else { 
                    if (!paused) gC.doPause();
                    Alert alert = new Alert(AlertType.CONFIRMATION);
                    alert.setTitle("Close TetrisFX?");
@@ -112,38 +128,37 @@ public class TetrisFX extends Application {
                    if (result.get() == ButtonType.OK) {
                    Platform.exit();
                    }
-                   else {
-                       
-                       return;
-                   }
-               }
+                }
            }
       }
    };
     
-    
+    /*
+    Handles all events from the keyboard. Cursor keys and 'p'.
+    */
     private EventHandler<KeyEvent> kH = new EventHandler<KeyEvent>() {
        @Override 
        public void handle(KeyEvent e) {
-         //keys to use: up, down, left, right; p?
            KeyCode code = e.getCode();
-           //System.out.println(e.toString());
-           //provision for hitting enter on play or quit button?
            if (playing) {
               if (code == KeyCode.P) { 
                   doPause();
             }
-              else  {
-                   if ( code == KeyCode.LEFT || code == KeyCode.RIGHT ) {
-                   //System.out.println(code.toString());
-                   gC.move(getOffset(code), 0);
-                   }
-                   else gC.move(0, getOffset(code));
-           } //soudn if it doesn't work and stuff
+            else {
+                if ( code == KeyCode.LEFT || code == KeyCode.RIGHT ) {
+                    gC.move(getOffset(code), 0);
+                }
+                else if (code == KeyCode.UP || code == KeyCode.DOWN) {
+                    gC.move(0, getOffset(code));
+                }
+           } 
            }           
         }
     };
     
+    /*
+    Pauses or unpauses game (i.e. this and the GameCanvas)
+    */
     private void doPause() {
         if (playing) {
         if (paused) {
@@ -160,7 +175,12 @@ public class TetrisFX extends Application {
         //else do nothing?
     }
     
-    
+    /* Converts a KeyCode representing a direction into input suited for GameCanvas.
+      @param - KeyCode assumed to be one of: KeyCode.UP, KeyCode.DOWN, KeyCode.LEFT,
+                                                                      KeyCode.RIGHT
+      @return - integer representing adjustment to be made to the falling block's
+     x or y-coordinates.
+    */
     private int getOffset(KeyCode direction) {
             if (direction == KeyCode.RIGHT || direction == KeyCode.DOWN) return 1;
             else return -1;

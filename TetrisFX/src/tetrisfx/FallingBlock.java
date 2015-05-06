@@ -1,48 +1,50 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package tetrisfx;
 
 import java.util.Random;
 
 
-/** Descending block taking one of several shapes: L, square, line with one in center,
+/** Descending block taking one of several shapes: L, square, stunted t,
  * straight line, 
  * @author Ruaridhi Bannatyne
  */
 public class FallingBlock {
-    //current central x and y coordinates
+    
+    /*
+    * Central x and y co-ordinates.
+    */
     private int cX;
     private int cY;
-    //Type of shape: 0 L, 1 square, 2 line with extra in center, 3 straight line, 4
-    private int state; //which shape is the block at present?
+    
+    /*
+    * Current configuration
+    */
+    private int state; 
+    /*
+    * x-offsets of each block in each configuration
+    */
     private int[][] xOffs; //rotation x and y offsets
+    /*
+    * y-offsets of each block in each configuration
+    */
     private int[][] yOffs;
-    //x-offsets and y-offsets which defien the position of each block relative to cX and cY
+    
+    /*
+    * Position of each block in GameCanvas' grid.
+    */
     private int[][] posn;
-    private int[][] prev; //last position
+    /*
+    * This block's color.
+    */
     private int color;
         //color?
-    //testing method
-    public void setX(int newX) {
-        cX = newX;
-        for(int i = 0; i < posn.length; i++) {
-            posn[i][0] = cX + xOffs[i][state];
-        }
-       
     
-    }
-    //also tecting
-    public void setY(int newY) {
-        cY = newY;
-       for (int i = 0; i < posn.length; i++) {
-           posn[i][1] = yOffs[i][state] + cY;
-       }
-    }
-    public int getX() { return cX;}
-    public int getY() {return cY;}
+    /*
+    * Constructor: creates a new FB with central x and y coordinates
+    startX and startY 
+    @param startX - cX to be used.
+    @param startY - cY to be used.
+    */
     
     public FallingBlock(int startX, int startY) {
         this.cX = startX;
@@ -79,11 +81,17 @@ public class FallingBlock {
             posn[i][1] = yOffs[i][state] + startY;
         }
         }
-        //good to go from here. What about color? Here or in GameComponent?
-     protected void move(int xMod, int yMod) {
+    
+    /*
+    *Moves this FB by the x and y values provided.
+    NB yMod of -1 indicates a flip operation,
+    @param xMod - offset to add to cX
+    @param yMod - offset to add to cY
+    */
+    protected void move(int xMod, int yMod) {
          this.posn = getProspective(xMod, yMod);
          cX += xMod;
-         if(yMod >=0) cY += yMod;
+         if (yMod >=0) cY += yMod;
          else {
              System.out.println(state);
              if (state == 3 ) state = 0;
@@ -91,13 +99,19 @@ public class FallingBlock {
          }
      }
     
-   protected int[][] getProspective(int xMod, int yMod) {
-       if(yMod == -1) {
-           System.out.println("flip operation");
+    /*
+    *  Gets position of this object after the input modifications.
+    Used for checking legality of moves
+    @param xMod - offset to add to cX
+    @param yMod - offset to add to cY
+    @return a 2d integer array containing the FB's coordinates after proposed move.
+    */
+    protected int[][] getProspective(int xMod, int yMod) {
+       if (yMod == -1) { //i.e. flip operation
            return prospectiveFlip();
        } 
        int[][] out = new int[4][2];
-        for(int i = 0; i < out.length; i++)
+        for (int i = 0; i < out.length; i++)
         {
             out[i][0] = posn[i][0] + xMod;
             out[i][1] = posn[i][1] + yMod;
@@ -105,10 +119,15 @@ public class FallingBlock {
         return out;
     } 
     
-    //shift in position as a result of being flipped
-   
+    
+    /* The FB's current position in grid coordinates.
+    * @param a 2d integer array containing the FB's coordinates.
+    */
     protected int[][] getPosn() { return posn;  }
     
+    /* The FB's position after a flip operation.
+    * @param a 2d integer array containing the FB's coordinates after a flip.
+    */
     protected int[][] prospectiveFlip()
     {
         int[][] out = new int[4][2];
@@ -122,17 +141,22 @@ public class FallingBlock {
         return out;
     }
     
+    /*
+    * Returns this FB's color
+    @return this FB's color.
+    */
     protected int getColor() { return this.color;}
   
-    
-    public static void main(String[] args) {
-       
-        
-    }
+   /*
+    * X and y-offsets for each configuration of an L-shaped block
+    */ 
    private static final int[][] lX = {{0, 1,0,-1}, {0,0,0,0}, 
                             {0, -1, 0, 1}, {1, -1, -1, 1}  };
    private static final int[][] lY = {{-1, 0,1,0}, {0,0,0,0},
                                      {1, 0, -1, 0}, {1, 1, -1, -1}  };
+   /*
+    * X and y-offsets for each configuration of a line-shaped block.
+    */ 
    private static final int[][] lineX = { {-2, 0, -2, 0}, {-1,0,-1, 0 },
                                   {0, 0, 0, 0}, {1,0, 1, 0 }};
    private static final int[][] lineY = { {0, -2, 0, -2}, {0,-1, 0,-1},
@@ -152,11 +176,16 @@ public class FallingBlock {
       34
       2
    */
-   
+   /*
+    * X and y-offsets for each configuration of a T-shaped block.
+    */ 
    private static final int[][] tX =  { {-1, 0, 0, 0}, {1,-1,-1,0 },
                                   {0, 0, 0, 0}, {0,0,1,1}};   
    private static final int[][] tY =  { {0, -1, -1, -1}, {0, 0, 0, 1 },
                                   {0, 0, 0, 0}, {1, 1, 0, 0}};  
+   /*
+    * X and y-offsets for each configuration of a square block.
+    */ 
    private static final int[][] squareX = { {-1, -1, -1, -1}, {0,0,0,0 },
                                   {-1, -1, -1, -1}, {0,0,0,0 }};
    private static final int[][] squareY = { {-1,-1,-1,-1}, {-1, -1, -1, -1},
@@ -175,12 +204,41 @@ public class FallingBlock {
        23
         4
    */
+   /*
+    * X and y-offsets for each configuration of a Z-shaped block.
+    */ 
    private static final int[][] zX = {{-1,1, -1,1}, {0, 1, 0, 1},
                                {0, 0, 0, 0}, {1, 0, 1, 0}};
    private static final int[][] zY = { {-1, -1, -1, -1}, {-1, 0, -1, 0},
                                {0, 0, 0, 0}, {0, 1, 0, 1}};
+   /*
+    * X and y-offsets for each configuration of a reversed Z-shaped block
+    */ 
    private static final int[][] izX = {{1, -1, 1,-1}, {0, -1, 0, -1},
                                {0, 0, 0, 0}, {-1, 0, -1, 0}};
    private static final int[][] izY = { {-1, -1, -1, -1}, {-1, 0, -1, 0},
                                {0, 0, 0, 0}, {0, 1, 0, 1}};
+    /*
+    //testing method
+    public void setX(int newX) {
+        cX = newX;
+        for(int i = 0; i < posn.length; i++) {
+            posn[i][0] = cX + xOffs[i][state];
+        }
+       
+    
+    }
+    //also tecting
+    public void setY(int newY) {
+        cY = newY;
+       for (int i = 0; i < posn.length; i++) {
+           posn[i][1] = yOffs[i][state] + cY;
+       }
+    }
+    
+    public int getX() { return cX;}
+    public int getY() {return cY;}
+    
+   
+    */
 } //ends FallingBlock

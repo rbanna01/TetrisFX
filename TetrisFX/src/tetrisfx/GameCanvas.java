@@ -20,59 +20,94 @@ import javafx.scene.shape.StrokeType;
  * @author ruaridhi
  */
 public class GameCanvas {
-    private int height;
-    private int width;
-    private int score;
-    private int[][] grid; //game grid
-    private FallingBlock fB; //all information about offsets, etc kept in Block
-    private Canvas c;
-    private GraphicsContext gC;
-    private Timer t;
-    private TT tt;
-    private boolean busy;
-    private boolean pause;
-    //initial time between downward movements in ms
-    private int DEFAULT_INTERVAL = 750;
-    private char DOWN = 'd';
-    private char UP = 'u';
-    private char LEFT = 'l';
-    private char RIGHT = 'r';
+    /*
+    *Height and width of game grid in squares.
+    */
     protected int HEIGHT= 20;
     protected int WIDTH = 10;
+    /*
+    * Dimensions of image representing grid to be drawn.
+    */
+    private int height;
+    private int width;
+    /*
+    * Player's current score (number of complete rows made.)
+    */
+    private int score;
+    /*
+    * The game grid.
+    */
+    private int[][] grid; 
+    /*
+    * The tetrimino currently descending
+    */
+    private FallingBlock fB; 
+    /*
+    * Used to draw the current state of the game.
+    */
+    private Canvas c;
+    private GraphicsContext gC;
+    /*
+    * t is used to make fB descend
+    * tt is the TimerTask t runs. 
+    */
+    private Timer t;
+    private TT tt;
+    
+    /*
+    * busy ensures non-concurrent modification of fB's position
+    * Pause indicates whether the game is currently paused.
+    */
+    private boolean busy;
+    private boolean pause;
+    
+    /*
+    * Time between downward movements in ms
+    */
+    private int DEFAULT_INTERVAL = 750;
+    /*
+    * fB's starting coordinates
+    */
     private final int STARTX = 6;
     private final int STARTY =  3;
-    //numbers: red, yellow, green, blue, orange, grey
+    
+    /*
+    * Integers on grid which correspond to colors on the Canvas.
+    */
     private final int RED = 1;
     private final int YELLOW = 2;
     private final int GREEN = 3;
     private final int BLUE = 4;
     private final int ORANGE = 5;
     private final int GREY = 6;
+    //used to lock user or timer out when needed.
     private boolean override;
-    private Rectangle rect;
-    //grid dimensions:10 by 20
-    //what about saved games?
+    /*
+    * Length of a square's side in pixels. 
+    * Depends on dimensions of Canvas.
+    */
     private int sideLength;
-    //needed height, width, score, FallingBlock, grid
-    public GameCanvas(int heightIn, int widthIn) {
+    
+    
+    public GameCanvas(int widthIn, int heightIn) {
        score = 0;     
        this.height = heightIn;
-       this.width = widthIn; 
        grid = new int[WIDTH][HEIGHT];
-       sideLength = heightIn/20; //need to get square length right
+       sideLength = heightIn/20;  //Since grid is 20 squares high
+       width = sideLength*10;
        c = new Canvas(width, height);
-       //initially white or black?
        gC = c.getGraphicsContext2D();       
        gC.setFill(Color.WHITE);
-       //gC.setStrokeType(StrokeType.INSIDE); //needs to be applied to Shape.
        gC.fillRect(0, 0, height, width);
        updateScore();  
     }
-    
+    /*
+    * Begins a new game: clears board, resets score, and starts timers.
+    */
     public void startGame() {
-       for(int i=0; i < grid.length; i++)
+       for (int i=0; i < grid.length; i++)
        {
-           for(int j = 0; j < grid[0].length; j++) 
+           for (int j = 0; j < grid[0].length; j++) 
            {
                grid[i][j] = 0;
            }
@@ -84,8 +119,11 @@ public class GameCanvas {
         pause = false;
         override = false;
         busy = false; //if doing tempo, will need to be reset here
-    } //should perhaps have a stopGame as well? Add when doign hi-scores and stuff
+    } 
     
+    /*
+    * Ends game: stops timers and resets all state variables.
+    */
     public void endGame() {
         stopTimer(); //guess I'm leaving stuff on the board as-was
         aT.stop();
@@ -94,34 +132,35 @@ public class GameCanvas {
         busy = true;
     }
     
+    /*
+    *Places fB at the statrting position: if it can't be placed there, game is over.
+    */
     private void initBlock() {
         fB = new FallingBlock(STARTX, STARTY);
-        if(checkMove(0,0)) {
-        //drawFB();
+        if(!checkMove(0,0)) {
+        endGame();
         }
-        else {
-            System.out.println("Game over man!");
-        } //loss condition. To avoid bugginess, startY should be modified
     }
     
+    /* Moves fB by the amounts input
+    *@param xOff, yOff - the offsets to be applied to fB's coordinates.
+    */
     
     public boolean move(int xOff, int yOff) {
         if (pause) return false;
-        while(busy) {}
+        while (busy) {}
         override = true;
         busy = true;
         if (checkMove(xOff, yOff)) {
-            //clearFB(); Should no longer be needed
             fB.move(xOff, yOff);
-            //drawFB();
             busy = false;
             override = false;
             return true;
-        } else { //no need to redraw
-            System.out.println("checkMove false");
+        } else { 
+            //System.out.println("checkMove false");
             if (yOff == 1) {
-               // doPause();
-                System.out.println("down");
+               
+              //  System.out.println("down");
                 //do stick, check for scoring or loss condition and start next tetrimino
                 //loss condition: highest Y in offsets higher than STARTY
                 int[][] posn = fB.getPosn();
@@ -129,47 +168,42 @@ public class GameCanvas {
                 ArrayList<Integer> ys = new ArrayList<>();
                 boolean lost = false;
                 for (int[] i: posn) {
-                    grid[i[0]][i[1]] = clr; //should this be after? 
+                    grid[i[0]][i[1]] = clr; 
                     if (i[1] <= 0) {
                         lost = true;
                         }
-                    if(!ys.contains(i[1])) ys.add(i[1]);
+                    if (!ys.contains(i[1])) ys.add(i[1]);
                 }
                 if (lost) {
-                    System.out.println("Game lost");
                     endGame();
-                     //loss handling here
                 } //ends
-                //Might want to sort ys: bottom first?
                 for(int y: ys)
-                { //ys needs to be sorted
-                    System.out.println(y);
-                    int x = 0;
+                { //   System.out.println(y);
+                    int x = 0; //check whether row is fully occupied.
                     while(x < WIDTH)
                     {
-                        System.out.println(x + " " + y);
                         if (grid[x][y] == 0) break;
                         x++;
                     }
-                    //System.out.println(x);
                     if (x == WIDTH) {
-                        //score handling and stuff
                         score++;
-                        System.out.println("Score " + score);
                         doFall(y);
                     }
                 }
                 initBlock();
             }
             busy = false;
-//            doPause();
             override = false;
             return false;
         } //what if there's a sound effect or something?   
     }
+    
+    /*
+    * For use when a row is removed. Contents of the row above are moved into
+    * this row.
+    */
     private void doFall(int y) {
-        System.out.println("doFall");
-        boolean recurse = false;
+       boolean recurse = false; //true only if there's something in this row
        for(int i = 0; i < WIDTH; i++) {
            grid[i][y] = grid[i][y-1];
        }
@@ -179,34 +213,33 @@ public class GameCanvas {
                break;
            }
        }
-       if (recurse) {
+       if (recurse) { //Since there could be something above
            doFall(y-1);
        }
     }
-    
-    
-    
-    
+       
+    /*
+    * Called by AnimationTimer; draws the grid, fB and the score.
+    */
     private void drawGrid() {
-    //System.out.println("drawGrid called");
     gC.clearRect(0,0, WIDTH, HEIGHT);
     gC.setFill(Color.WHITE);
     gC.fillRect(0, 0, WIDTH, HEIGHT);
-    for(int i = 0; i < WIDTH; i++)
-       { //numbers: red1, yellow2, green3, blue4, orange5, grey6
-           for(int j = 0; j < HEIGHT; j++) {
-               switch(grid[i][j]) {
-                   case  1: drawSquare(i, j, Color.RED);
+    for (int i = 0; i < WIDTH; i++)
+       {  
+           for (int j = 0; j < HEIGHT; j++) {
+               switch (grid[i][j]) {
+                   case RED: drawSquare(i, j, Color.RED);
                             break;
-                   case  2: drawSquare(i, j, Color.YELLOW);
+                   case YELLOW: drawSquare(i, j, Color.YELLOW);
                             break;
-                   case  3: drawSquare(i, j, Color.GREEN);
+                   case GREEN: drawSquare(i, j, Color.GREEN);
                             break;
-                   case  4: drawSquare(i, j, Color.BLUE);
+                   case BLUE: drawSquare(i, j, Color.BLUE);
                             break;
-                   case  5: drawSquare(i, j, Color.ORANGE);
+                   case ORANGE: drawSquare(i, j, Color.ORANGE);
                             break;
-                   case  6: drawSquare(i, j, Color.GREY);
+                   case GREY: drawSquare(i, j, Color.GREY);
                             break;
                    default: clear(i, j);
                             break;
@@ -216,21 +249,25 @@ public class GameCanvas {
     updateScore();
     }
     
-    
+    /*
+    * used to remove image of fB in previous positions.
+    */
     private void clear(int x, int y) {
         gC.setFill(Color.WHITE);
-        //gC.setStroke(Color.WHITE);
-       // gC.clearRect(x*sideLength, y*sideLength, sideLength, sideLength);
         gC.fillRect(x*sideLength, y*sideLength, sideLength, sideLength);
-       // gC.strokeRect(x*sideLength, y*sideLength, sideLength, sideLength);
     }
     
+    /*
+    *  Removes fB from the canvas. Done when moving.
+    */
     private void clearFB() {
         for(int[] posn: fB.getPosn()) {
                 clear(posn[0], posn[1]);
             }
     }
-        
+    /*
+    * Draws fB at its present location.
+    */    
     private void drawFB() {
          Color cIn; 
          switch(fB.getColor()) {
@@ -250,45 +287,57 @@ public class GameCanvas {
         for(int[] p: fB.getPosn()) { drawSquare(p[0], p[1], cIn);}
     }
     
+    /*
+    * Draw a square on the canvas at (xIn, Yin) using color c
+    *@param - xIn x-coordinate on canvas
+    @param - yIn y-coordinate on canvas
+    @param c the color to be used in drawing th e square.
+    */
     private void drawSquare( int xIn, int yIn, Color c) {
-        //gC.setStroke(Color.BLACK);
-        int x = xIn*sideLength;
+       int x = xIn*sideLength;
         int y = yIn* sideLength;
+        gC.setStroke(Color.BLACK);
         gC.setFill(c);
+        gC.strokeRect(x, y, sideLength-1, sideLength-1);
         gC.fillRect(x, y, sideLength, sideLength);
     }
     
-    //valid x-axis stuff failing
+    /*
+    * Check whether adjusting position of fB to (x+ xOff, y + yOff) is legal.
+    *@param - xIn x-coordinate on grid
+    @param - yIn y-coordinate on grid
+    */
     private boolean checkMove(int xOff, int yOff) {
        int[][] offsets;
-       if (yOff == -1) {
-           //needs own handling 
-           offsets = fB.prospectiveFlip();
+       if (yOff == -1) { //indicates that the up cursor has been pressed: 
+           offsets = fB.prospectiveFlip(); //fB is to be flipped.
            for(int[] vals: offsets) {
                if(vals[1] >= HEIGHT
                        || vals[0] >= WIDTH || vals[0] < 0
                        || vals[1] <0 || grid[vals[0]][vals[1]] != 0) return false;
            }
           return true;
-       }//fB to vbe removed from grid; drawn separately
-       else  { //problem here: need to ignore fB's own squares when checking
+       }
+       else  { 
            offsets = fB.getProspective(xOff,yOff);
            for (int i = 0; i < offsets.length; i++) {
            int x  = offsets[i][0];
-           int y =  offsets[i][1];
+           int y =  offsets[i][1]; 
+           //move illegal if: goes off the grid, or square occupied
            if (x < 0 ||  x >= WIDTH || y >= HEIGHT || y < 0||
                    grid[x][y] != 0) return false;
             }
            return true;
        } //ends else
     }
-    //for testing; should be removed later
-    public void setGrid(int[][] newGrid) {
-        this.grid = newGrid;
-    }
-      
+    
+   /*
+    * Pauses or unpauses game.
+    */
+    
     public void doPause() {
-        if (!override) pause = !pause;
+        //ensures user cannot restart game after its ended.
+        if (!override) pause = !pause; 
         if(pause) {
             aT.stop();
         }
@@ -296,54 +345,78 @@ public class GameCanvas {
             aT.start();
         }
     }
-    
+    /*
+    * Updates score to latest value on Canvas.
+    */ 
     private void updateScore() {
-      // gC.setFill(Color.WHITE);
-       //gC.fillRect(10, 10, 50, 10);
        gC.setFill(Color.BLACK);
        gC.fillText(String.valueOf(score), 10, 10);    
     }
      
-    
+    /*
+    * gets the Canvas used by this GameCanvas
+    @output - this GameCanvas' Canvas.
+    */
     public Canvas getCanvas() {
       return this.c;
     }
 
-private class TT extends TimerTask {
+    /*
+    * Moves fB down by one square.
+    */
+    private class TT extends TimerTask {
     @Override
     public void run() {
         if (!pause) move(0, 1); //TODO: remove
     }
     
-}
+    }
 
-private final AnimationTimer aT = new AnimationTimer() {
+    /*
+    * Draws state of grid and fB at time called.
+    */
+    private final AnimationTimer aT = new AnimationTimer() {
     
-  @Override
-  public void handle(long in) {
-      System.out.println("handling");
-      drawGrid();
-      clearFB();
-      drawFB();
-  }
-};
+      @Override
+      public void handle(long in) {
+          drawGrid();
+          clearFB();
+          drawFB();
+       }
+    };
  
-private void initTimer() {
-    t = new Timer(); //i.e. define a default rect
-    tt = new TT();
-    t.schedule(tt, 0, DEFAULT_INTERVAL);
+    /*
+    * Initializes t.
+    */
+    private void initTimer() {
+        t = new Timer(); //i.e. define a default rect
+        tt = new TT();
+        t.schedule(tt, 0, DEFAULT_INTERVAL);
+        }
+    
+    /*
+    * Stops t
+    */
+    private void stopTimer() {
+        try {
+            t.cancel();
+        }
+        catch (IllegalStateException e) {
+         //t already cancelled; no action necessary.
+        } 
     }
-private void stopTimer() {
-    try {
-        t.cancel();
-    }
-    catch (IllegalStateException e) {} //need to do anything here?
-}
 
-//needed? Should be done by gC itself...
+   /*
+    //test methods and tests in main()
    public void setFB(FallingBlock fIn) {
        this.fB = fIn;
    }
+   
+   
+    public void setGrid(int[][] newGrid) {
+        this.grid = newGrid;
+    }
+     
 
   public static void main(String[] args) {
       int[][] testGrid = new int[10][20];
@@ -386,5 +459,5 @@ private void stopTimer() {
           System.out.println("Moving into lower block accepted");
       }
   }
-  
-}
+  */ 
+} //ends GameCanvas
